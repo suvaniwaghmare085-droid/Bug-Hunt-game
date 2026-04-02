@@ -1,1 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug Hunt — Debug Challenge Game</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  :root {
+    --bg: #0d0f14;
+    --surface: #161820;
+    --surface2: #1e2028;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #7c8099;
+    --accent: #7c6ef5;
+    --accent2: #a598ff;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --cyan: #22d3ee;
+    --pink: #f472b6;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* HEADER */
+  header {
+    width: 100%;
+    max-width: 900px;
+    padding: 2rem 1.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-bug {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+
+  .stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .stat-label { color: var(--muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-val { font-weight: 600; font-size: 1rem; }
+  .stat-val.score { color: var(--accent2); }
+  .stat-val.lives { color: var(--red); letter-spacing: 2px; }
+  .stat-val.streak { color: var(--amber); }
+
+  /* MAIN */
+  main {
+    width: 100%;
+    max-width: 900px;
+    padding: 0 1.5rem 3rem;
+    flex: 1;
+  }
+
+  /* CHALLENGE CARD */
+  .challenge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .challenge-header {
+    padding: 1rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .challenge-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .lang-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .lang-js { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
+  .lang-py { background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25); }
+  .lang-java { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+  .lang-cpp { background: rgba(167,139,250,0.12); color: var(--accent2); border: 1px solid rgba(167,139,250,0.25); }
+  .lang-ts { background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
+  .lang-ruby { background: rgba(244,114,182,0.12); color: var(--pink); border: 1px solid rgba(244,114,182,0.25); }
+
+  .diff-badge {
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .diff-easy { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+  .diff-medium { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+  .diff-hard { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+
+  .challenge-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .timer-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+  }
+
+  .timer-bar-outer {
+    width: 100px;
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .timer-bar-inner {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.5s linear, background 0.3s;
+  }
+  .timer-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* CODE AREA */
+  .code-section {
+    padding: 1.2rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .bug-line {
+    background: rgba(248,113,113,0.1);
+    border-left: 3px solid var(--red);
+    margin: 0 -1.2rem;
+    padding: 0 1.2rem 0 calc(1.2rem - 3px);
+    display: block;
+  }
+
+  /* HINT */
+  .hint-text {
+    margin-top: 0.8rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    display: none;
+  }
+  .hint-text.visible { display: block; }
+  .hint-icon { color: var(--amber); }
+
+  /* OPTIONS */
+  .options-section {
+    padding: 1.2rem 1.4rem;
+  }
+
+  .options-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .option-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(124,110,245,0.08);
+  }
+
+  .option-btn.correct {
+    border-color: var(--green);
+    background: rgba(74,222,128,0.1);
+    color: var(--green);
+  }
+  .option-btn.wrong {
+    border-color: var(--red);
+    background: rgba(248,113,113,0.08);
+    color: var(--red);
+  }
+  .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+  /* FEEDBACK */
+  .feedback {
+    margin: 1rem 1.4rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    display: none;
+    line-height: 1.6;
+  }
+  .feedback.visible { display: block; }
+  .feedback.correct {
+    background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.3);
+    color: var(--green);
+  }
+  .feedback.wrong {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    color: var(--red);
+  }
+  .feedback-title { font-weight: 700; margin-bottom: 4px; font-family: var(--sans); font-size: 0.9rem; }
+  .feedback-body { color: var(--muted); font-family: var(--mono); font-size: 0.78rem; }
+
+  /* ACTION ROW */
+  .action-row {
+    padding: 1rem 1.4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+  }
+
+  .hint-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.45rem 1rem;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--amber);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .hint-btn:hover { background: rgba(251,191,36,0.08); }
+
+  .next-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1.4rem;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    display: none;
+    transition: opacity 0.15s;
+  }
+  .next-btn:hover { opacity: 0.85; }
+  .next-btn.visible { display: block; }
+
+  .q-progress {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* SCREENS */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 1.5rem;
+    min-height: 60vh;
+  }
+  .screen.active { display: flex; }
+
+  .screen-icon { font-size: 4rem; margin-bottom: 1rem; }
+  .screen h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.5rem; }
+  .screen p { color: var(--muted); font-size: 1rem; max-width: 460px; margin-bottom: 2rem; line-height: 1.7; }
+
+  .start-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    padding: 0.85rem 2.5rem;
+    font-family: var(--sans);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .start-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .lang-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .final-score {
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--accent2);
+    letter-spacing: -0.04em;
+    margin: 0.5rem 0;
+  }
+
+  .final-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 2rem;
+  }
+  .final-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem;
+  }
+  .final-stat-val { font-size: 1.5rem; font-weight: 700; font-family: var(--mono); }
+  .final-stat-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* PROGRESS BAR */
+  .progress-bar-outer {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    margin-bottom: 1rem;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  @media (max-width: 600px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .final-stats { grid-template-columns: repeat(3, 1fr); }
+    header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+    .stats-row { gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-bug">🐛</div>
+    Bug Hunt
+  </div>
+  <div class="stats-row" id="stats-row" style="display:none">
+    <div class="stat">
+      <span class="stat-label">Score</span>
+      <span class="stat-val score" id="score-display">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Streak</span>
+      <span class="stat-val streak" id="streak-display">0🔥</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Lives</span>
+      <span class="stat-val lives" id="lives-display">♥♥♥</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- START SCREEN -->
+  <div class="screen active" id="start-screen">
+    <div class="screen-icon">🐛</div>
+    <h1>Bug Hunt</h1>
+    <p>Find and fix bugs across multiple programming languages. Each round gives you a broken snippet — pick the correct fix before time runs out.</p>
+    <div class="lang-tags">
+      <span class="lang-badge lang-js">JavaScript</span>
+      <span class="lang-badge lang-py">Python</span>
+      <span class="lang-badge lang-java">Java</span>
+      <span class="lang-badge lang-cpp">C++</span>
+      <span class="lang-badge lang-ts">TypeScript</span>
+      <span class="lang-badge lang-ruby">Ruby</span>
+    </div>
+    <button class="start-btn" onclick="startGame()">Start Hunting →</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="game-screen" style="min-height:unset; justify-content:flex-start; padding: 0;">
+    <div style="width:100%">
+      <div class="progress-bar-outer" id="progress-bar-outer">
+        <div class="progress-bar-inner" id="progress-bar-inner"></div>
+      </div>
+
+      <div class="challenge-card">
+        <div class="challenge-header">
+          <div class="challenge-meta">
+            <span class="lang-badge" id="lang-badge">JS</span>
+            <span class="diff-badge" id="diff-badge">Easy</span>
+            <span class="challenge-title" id="challenge-title">Title</span>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-bar-outer">
+              <div class="timer-bar-inner" id="timer-bar"></div>
+            </div>
+            <span class="timer-text" id="timer-text">20</span>
+          </div>
+        </div>
+
+        <div class="code-section">
+          <div class="code-label">Buggy Code — spot the error</div>
+          <div class="code-block" id="code-block"></div>
+          <div class="hint-text" id="hint-text"><span class="hint-icon">💡</span> <span id="hint-content"></span></div>
+        </div>
+
+        <div class="options-section">
+          <div class="options-label">Which fix is correct?</div>
+          <div class="options-grid" id="options-grid"></div>
+        </div>
+
+        <div class="feedback" id="feedback">
+          <div class="feedback-title" id="feedback-title"></div>
+          <div class="feedback-body" id="feedback-body"></div>
+        </div>
+
+        <div class="action-row">
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="hint-btn" id="hint-btn" onclick="showHint()">💡 Hint (-5 pts)</button>
+            <span class="q-progress" id="q-progress">1 / 15</span>
+          </div>
+          <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen" id="end-screen">
+    <div class="screen-icon" id="end-icon">🏆</div>
+    <h1 id="end-title">Game Over</h1>
+    <div class="final-score" id="final-score">0</div>
+    <p id="end-msg">Here's how you did:</p>
+    <div class="final-stats">
+      <div class="final-stat">
+        <div class="final-stat-val" id="fs-correct" style="color:var(--green)">0</div>
+        <div class="final-stat-label">Correct</div>
+      </div>
+      <div class="final-stat">
+        <div class="final-stat-val" id="fs-wrong" style="color:var(--red)">0</div>
+        <div class="final-stat-label">Wrong</div>
+      </div>
+      <div class="final-stat">
+        <div class="final-stat-val" id="fs-streak" style="color:var(--amber)">0</div>
+        <div class="final-stat-label">Best Streak</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:12px;">
+      <button class="start-btn" onclick="startGame()">Play Again</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const QUESTIONS = [
+  {
+    lang: "js", langLabel: "JavaScript", diff: "easy",
+    title: "Off-by-one in loop",
+    code: `function sumArray(arr) {\n  let total = 0;\n  for (let i = 0; i <= arr.length; i++) {\n    total += arr[i];\n  }\n  return total;\n}`,
+    bugLine: 2,
+    hint: "Check the loop boundary condition carefully.",
+    options: [
+      { text: `for (let i = 0; i < arr.length; i++)`, correct: true },
+      { text: `for (let i = 1; i <= arr.length; i++)`, correct: false },
+      { text: `for (let i = 0; i <= arr.length - 2; i++)`, correct: false },
+      { text: `for (let i = 0; i < arr.length + 1; i++)`, correct: false },
+    ],
+    explanation: "i <= arr.length accesses arr[arr.length] which is undefined. Use i < arr.length."
+  },
+  {
+    lang: "py", langLabel: "Python", diff: "easy",
+    title: "Wrong indentation block",
+    code: `def factorial(n):\n    if n == 0:\n        return 1\n    else:\n        return n * factorial(n - 1)\n    print("done")`,
+    bugLine: 5,
+    hint: "Where should the print statement be?",
+    options: [
+      { text: `print("done") # outside function`, correct: true },
+      { text: `return n * factorial(n) - 1`, correct: false },
+      { text: `if n <= 0: return 1`, correct: false },
+      { text: `return (n-1) * factorial(n)`, correct: false },
+    ],
+    explanation: "print('done') is inside the function but after the return, making it unreachable. It should be outside the function."
+  },
+  {
+    lang: "js", langLabel: "JavaScript", diff: "medium",
+    title: "Assignment instead of comparison",
+    code: `function isAdult(age) {\n  if (age = 18) {\n    return true;\n  }\n  return age >= 18;\n}`,
+    bugLine: 1,
+    hint: "Look at the if condition very carefully.",
+    options: [
+      { text: `if (age >= 18) { return true; }`, correct: true },
+      { text: `if (age == 18) { return true; }`, correct: false },
+      { text: `if (age !== 18) { return false; }`, correct: false },
+      { text: `if (age = true) { return age; }`, correct: false },
+    ],
+    explanation: "= is assignment, not comparison. age = 18 always assigns 18 (truthy). Use >= 18 for the correct check."
+  },
+  {
+    lang: "java", langLabel: "Java", diff: "medium",
+    title: "Null pointer dereference",
+    code: `public int getLength(String s) {\n    if (s == null) {\n        System.out.println(s.length());\n        return -1;\n    }\n    return s.length();\n}`,
+    bugLine: 2,
+    hint: "What happens when s is null and you call a method on it?",
+    options: [
+      { text: `System.out.println("null"); return -1;`, correct: true },
+      { text: `return s.length() == null ? -1 : 0;`, correct: false },
+      { text: `if (s.equals(null)) return -1;`, correct: false },
+      { text: `System.out.println(s.toString());`, correct: false },
+    ],
+    explanation: "When s is null, calling s.length() throws NullPointerException. Print a string literal like \"null\" instead."
+  },
+  {
+    lang: "py", langLabel: "Python", diff: "easy",
+    title: "Mutable default argument",
+    code: `def add_item(item, lst=[]):\n    lst.append(item)\n    return lst\n\nresult = add_item("apple")\nresult2 = add_item("banana")`,
+    bugLine: 0,
+    hint: "Default mutable arguments in Python are shared across calls.",
+    options: [
+      { text: `def add_item(item, lst=None):\n    if lst is None: lst = []`, correct: true },
+      { text: `def add_item(item, lst=list())`, correct: false },
+      { text: `def add_item(item, *lst):`, correct: false },
+      { text: `lst = []; lst.extend([item])`, correct: false },
+    ],
+    explanation: "Mutable defaults like [] are created once and shared. Use lst=None and create a new list inside the function."
+  },
+  {
+    lang: "cpp", langLabel: "C++", diff: "hard",
+    title: "Memory leak — missing delete",
+    code: `void processData(int size) {\n    int* arr = new int[size];\n    for (int i = 0; i < size; i++) {\n        arr[i] = i * 2;\n    }\n    // arr used here...\n}`,
+    bugLine: 5,
+    hint: "Heap memory allocated with new[] must be freed.",
+    options: [
+      { text: `delete[] arr; // after use`, correct: true },
+      { text: `free(arr);`, correct: false },
+      { text: `delete arr;`, correct: false },
+      { text: `arr = nullptr;`, correct: false },
+    ],
+    explanation: "new[] must be paired with delete[]. Using free() is wrong for C++ new, and delete (without []) is also undefined behavior for arrays."
+  },
+  {
+    lang: "ts", langLabel: "TypeScript", diff: "medium",
+    title: "Optional chaining error",
+    code: `interface User {\n  profile?: { name: string };\n}\n\nfunction greet(user: User): string {\n  return "Hello, " + user.profile.name;\n}`,
+    bugLine: 5,
+    hint: "profile is optional — it might not exist.",
+    options: [
+      { text: `return "Hello, " + user.profile?.name ?? "stranger";`, correct: true },
+      { text: `return "Hello, " + user!.profile.name;`, correct: false },
+      { text: `return "Hello, " + user.profile!.name;`, correct: false },
+      { text: `return "Hello, " + (user as any).profile.name;`, correct: false },
+    ],
+    explanation: "profile is optional (?), so profile.name will throw at runtime if undefined. Use optional chaining (?.) and a fallback with ??."
+  },
+  {
+    lang: "py", langLabel: "Python", diff: "medium",
+    title: "Integer division surprise",
+    code: `def average(numbers):\n    total = 0\n    for n in numbers:\n        total += n\n    return total / len(numbers)\n\nresult = average([1, 2, 3])  # Python 2 style bug`,
+    bugLine: 4,
+    hint: "This is a Python 2 vs Python 3 division issue.",
+    options: [
+      { text: `return total / len(numbers)  # already fine in Py3`, correct: true },
+      { text: `return total // len(numbers)`, correct: false },
+      { text: `return float(total // len(numbers))`, correct: false },
+      { text: `return total % len(numbers)`, correct: false },
+    ],
+    explanation: "In Python 3, / already performs float division. In Python 2 you'd need float(total)/len(numbers), but in Python 3 this code is correct."
+  },
+  {
+    lang: "js", langLabel: "JavaScript", diff: "hard",
+    title: "Closure in a loop",
+    code: `const funcs = [];\nfor (var i = 0; i < 3; i++) {\n  funcs.push(function() {\n    console.log(i);\n  });\n}\nfuncs[0](); // prints 3, not 0`,
+    bugLine: 1,
+    hint: "The variable i is shared across all closures.",
+    options: [
+      { text: `for (let i = 0; i < 3; i++)`, correct: true },
+      { text: `for (const i = 0; i < 3; i++)`, correct: false },
+      { text: `for (var i = 0; i <= 3; i++)`, correct: false },
+      { text: `var i; for (i in [0,1,2])`, correct: false },
+    ],
+    explanation: "var is function-scoped, so all closures share the same i (which is 3 after the loop). Replace var with let for block scoping."
+  },
+  {
+    lang: "java", langLabel: "Java", diff: "easy",
+    title: "String comparison with ==",
+    code: `public boolean isSame(String a, String b) {\n    if (a == b) {\n        return true;\n    }\n    return false;\n}`,
+    bugLine: 1,
+    hint: "In Java, == on objects checks reference equality.",
+    options: [
+      { text: `if (a.equals(b))`, correct: true },
+      { text: `if (a.compareTo(b) == 0)`, correct: false },
+      { text: `if (a === b)`, correct: false },
+      { text: `if (Objects.equals(a, b) == true)`, correct: false },
+    ],
+    explanation: "== compares references in Java, not content. Use .equals() to compare String values. Objects.equals() is also valid but == true is redundant."
+  },
+  {
+    lang: "ruby", langLabel: "Ruby", diff: "medium",
+    title: "Frozen string mutation",
+    code: `str = "hello".freeze\nstr << " world"\nputs str`,
+    bugLine: 1,
+    hint: "A frozen object cannot be modified in Ruby.",
+    options: [
+      { text: `str = str + " world"`, correct: true },
+      { text: `str.unfreeze\nstr << " world"`, correct: false },
+      { text: `str.dup << " world"`, correct: false },
+      { text: `str.gsub!("hello", "hello world")`, correct: false },
+    ],
+    explanation: "<< mutates the string in place. Since str is frozen, this raises FrozenError. Use + to create a new string instead."
+  },
+  {
+    lang: "cpp", langLabel: "C++", diff: "medium",
+    title: "Integer overflow",
+    code: `int multiply(int a, int b) {\n    return a * b;\n}\n\n// Called with:\nlong long result = multiply(100000, 100000);`,
+    bugLine: 1,
+    hint: "Consider the size of the data types being used.",
+    options: [
+      { text: `long long multiply(long long a, long long b)`, correct: true },
+      { text: `double multiply(int a, int b)`, correct: false },
+      { text: `int multiply(int a, int b) { return abs(a*b); }`, correct: false },
+      { text: `unsigned int multiply(int a, int b)`, correct: false },
+    ],
+    explanation: "100000 * 100000 = 10^10, which overflows int (max ~2.1×10^9). Change the parameter and return type to long long."
+  },
+  {
+    lang: "ts", langLabel: "TypeScript", diff: "hard",
+    title: "Async/await missing await",
+    code: `async function fetchUser(id: number) {\n  const res = fetch(\`/api/user/\${id}\`);\n  const data = res.json();\n  return data;\n}`,
+    bugLine: 1,
+    hint: "fetch() and .json() both return Promises.",
+    options: [
+      { text: `const res = await fetch(...);\nconst data = await res.json();`, correct: true },
+      { text: `const res = fetch(...).then(r => r);\nconst data = res.json();`, correct: false },
+      { text: `const res = fetch(...).json();`, correct: false },
+      { text: `const data = Promise.resolve(fetch(...));`, correct: false },
+    ],
+    explanation: "fetch() and .json() are both async — they return Promises. Without await, res is a Promise object, and res.json() would fail."
+  },
+  {
+    lang: "py", langLabel: "Python", diff: "hard",
+    title: "Modifying list while iterating",
+    code: `def remove_evens(nums):\n    for n in nums:\n        if n % 2 == 0:\n            nums.remove(n)\n    return nums\n\nremove_evens([1,2,3,4,5,6])`,
+    bugLine: 2,
+    hint: "Removing items from a list while iterating over it skips elements.",
+    options: [
+      { text: `return [n for n in nums if n % 2 != 0]`, correct: true },
+      { text: `for n in nums[:]: nums.pop(n)`, correct: false },
+      { text: `nums.remove(x for x in nums if x%2==0)`, correct: false },
+      { text: `while 0 in nums: nums.remove(0)`, correct: false },
+    ],
+    explanation: "Mutating a list during iteration skips elements. Use a list comprehension to create a new filtered list instead."
+  },
+  {
+    lang: "js", langLabel: "JavaScript", diff: "hard",
+    title: "Floating point comparison",
+    code: `function isEqual(a, b) {\n  return a - b === 0;\n}\n\nconsole.log(isEqual(0.1 + 0.2, 0.3)); // false!`,
+    bugLine: 1,
+    hint: "Floating point numbers can't be compared exactly.",
+    options: [
+      { text: `return Math.abs(a - b) < Number.EPSILON;`, correct: true },
+      { text: `return parseFloat(a) === parseFloat(b);`, correct: false },
+      { text: `return a.toFixed(2) - b.toFixed(2) === 0;`, correct: false },
+      { text: `return parseInt(a) === parseInt(b);`, correct: false },
+    ],
+    explanation: "0.1 + 0.2 = 0.30000000000000004 in IEEE 754. Use Math.abs(a - b) < Number.EPSILON for safe float comparison."
+  },
+];
+
+let questions = [];
+let currentQ = 0;
+let score = 0;
+let lives = 3;
+let streak = 0;
+let bestStreak = 0;
+let correctCount = 0;
+let wrongCount = 0;
+let timerInterval = null;
+let timeLeft = 0;
+let hintUsed = false;
+let answered = false;
+const TOTAL_TIME = 25;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  questions = shuffle(QUESTIONS).slice(0, 10);
+  currentQ = 0; score = 0; lives = 3; streak = 0; bestStreak = 0;
+  correctCount = 0; wrongCount = 0;
+
+  document.getElementById('stats-row').style.display = 'flex';
+  showScreen('game-screen');
+  updateStats();
+  loadQuestion();
+}
+
+function showScreen(id) {
+  ['start-screen','game-screen','end-screen'].forEach(s => {
+    document.getElementById(s).classList.remove('active');
+  });
+  document.getElementById(id).classList.add('active');
+}
+
+function loadQuestion() {
+  if (currentQ >= questions.length || lives <= 0) { endGame(); return; }
+
+  const q = questions[currentQ];
+  answered = false;
+  hintUsed = false;
+
+  document.getElementById('q-progress').textContent = `${currentQ + 1} / ${questions.length}`;
+  document.getElementById('progress-bar-inner').style.width = `${(currentQ / questions.length) * 100}%`;
+
+  const langClass = `lang-${q.lang}`;
+  const lb = document.getElementById('lang-badge');
+  lb.className = `lang-badge ${langClass}`;
+  lb.textContent = q.langLabel;
+
+  const db = document.getElementById('diff-badge');
+  db.className = `diff-badge diff-${q.diff}`;
+  db.textContent = q.diff.charAt(0).toUpperCase() + q.diff.slice(1);
+
+  document.getElementById('challenge-title').textContent = q.title;
+  document.getElementById('hint-content').textContent = q.hint;
+  document.getElementById('hint-text').classList.remove('visible');
+  document.getElementById('hint-btn').disabled = false;
+
+  renderCode(q.code, q.bugLine);
+  renderOptions(q.options);
+
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('next-btn').classList.remove('visible');
+
+  startTimer();
+}
+
+function renderCode(code, bugLine) {
+  const lines = code.split('\n');
+  const block = document.getElementById('code-block');
+  block.innerHTML = '';
+  lines.forEach((line, i) => {
+    const span = document.createElement('span');
+    span.style.display = 'block';
+    if (i === bugLine) span.className = 'bug-line';
+    span.textContent = line;
+    block.appendChild(span);
+  });
+}
+
+function renderOptions(options) {
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const shuffled = shuffle(options);
+  shuffled.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = opt.text;
+    btn.onclick = () => handleAnswer(btn, opt.correct);
+    grid.appendChild(btn);
+  });
+}
+
+function handleAnswer(btn, isCorrect) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+
+  const q = questions[currentQ];
+  const allBtns = document.querySelectorAll('.option-btn');
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    let pts = hintUsed ? 5 : (q.diff === 'easy' ? 10 : q.diff === 'medium' ? 20 : 30);
+    const timeBonus = Math.floor(timeLeft / TOTAL_TIME * 10);
+    pts += timeBonus;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    if (streak >= 3) pts = Math.floor(pts * 1.5);
+    score += pts;
+    correctCount++;
+    showFeedback(true, `+${pts} pts${streak >= 3 ? ' 🔥 Streak bonus!' : ''}`, q.explanation);
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => { if (b !== btn) { const opt = [...document.querySelectorAll('.option-btn')]; } });
+    // highlight correct
+    allBtns.forEach(b => {
+      if (b.classList.contains('correct') === false && b !== btn) {
+        const text = b.textContent;
+        const matchingOpt = q.options.find(o => o.correct && o.text === text);
+        if (matchingOpt) b.classList.add('correct');
+      }
+    });
+    streak = 0;
+    lives--;
+    wrongCount++;
+    showFeedback(false, `Incorrect — ${lives} ${lives === 1 ? 'life' : 'lives'} remaining`, q.explanation);
+  }
+
+  allBtns.forEach(b => b.disabled = true);
+  updateStats();
+  document.getElementById('next-btn').classList.add('visible');
+
+  if (lives <= 0) {
+    document.getElementById('next-btn').textContent = 'See Results →';
+  }
+}
+
+function showFeedback(correct, title, body) {
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback visible ${correct ? 'correct' : 'wrong'}`;
+  document.getElementById('feedback-title').textContent = (correct ? '✓ ' : '✗ ') + title;
+  document.getElementById('feedback-body').textContent = body;
+}
+
+function showHint() {
+  hintUsed = true;
+  document.getElementById('hint-text').classList.add('visible');
+  document.getElementById('hint-btn').disabled = true;
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= questions.length || lives <= 0) { endGame(); return; }
+  document.getElementById('next-btn').textContent = 'Next →';
+  loadQuestion();
+}
+
+function startTimer() {
+  timeLeft = TOTAL_TIME;
+  updateTimerUI();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerUI();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (!answered) {
+        answered = true;
+        streak = 0;
+        lives--;
+        wrongCount++;
+        const q = questions[currentQ];
+        showFeedback(false, `Time's up! ${lives} ${lives === 1 ? 'life' : 'lives'} remaining`, q.explanation);
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+        updateStats();
+        document.getElementById('next-btn').classList.add('visible');
+        if (lives <= 0) document.getElementById('next-btn').textContent = 'See Results →';
+      }
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  const pct = timeLeft / TOTAL_TIME * 100;
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 50 ? 'var(--green)' : pct > 25 ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('timer-text').textContent = timeLeft;
+}
+
+function updateStats() {
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('streak-display').textContent = streak > 0 ? `${streak}🔥` : '0';
+  const hearts = '♥'.repeat(lives) + '♡'.repeat(Math.max(0, 3 - lives));
+  document.getElementById('lives-display').textContent = hearts;
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  document.getElementById('progress-bar-inner').style.width = '100%';
+  showScreen('end-screen');
+
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('fs-correct').textContent = correctCount;
+  document.getElementById('fs-wrong').textContent = wrongCount;
+  document.getElementById('fs-streak').textContent = bestStreak;
+
+  let title, icon, msg;
+  const accuracy = correctCount / (correctCount + wrongCount) || 0;
+  if (accuracy >= 0.9) { icon = '🏆'; title = 'Bug Slayer!'; msg = "Incredible accuracy. You're a debugging master."; }
+  else if (accuracy >= 0.7) { icon = '🎯'; title = 'Sharp Eye'; msg = "Great debugging skills. A few bugs slipped by though!"; }
+  else if (accuracy >= 0.5) { icon = '🔧'; title = 'Getting There'; msg = "Decent effort! Keep practicing to sharpen your eye."; }
+  else { icon = '🐛'; title = 'The Bugs Won'; msg = "Don't give up! Every debug session makes you stronger."; }
+
+  document.getElementById('end-icon').textContent = icon;
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-msg').textContent = msg;
+}
+</script>
+</body>
+</html>
