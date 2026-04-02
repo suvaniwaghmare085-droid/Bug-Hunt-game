@@ -1,5 +1,3 @@
-https://suvaniwaghmare085-droid.github.io/Bug-Hunt-game/bug-hunt-game.html
-
 # 🐛 Bug Hunt — Debug Challenge Game
 
 A fast-paced browser-based game where you spot and fix bugs across **6 programming languages** — all in a single HTML file with zero dependencies.
@@ -10,7 +8,7 @@ A fast-paced browser-based game where you spot and fix bugs across **6 programmi
 
 ## 🎮 Demo
 
-> **Play it live →** https://suvaniwaghmare085-droid.github.io/bug-hunt/bug-hunt-game.html
+> **Play it live →** https://suvaniwaghmare085-droid.github.io/Bug-Hunt-game/bug-hunt-game.html
 
 
 ## 📸 What It Looks Like
