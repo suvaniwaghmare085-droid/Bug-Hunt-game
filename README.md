@@ -1,1 +1,1 @@
-https://suvaniwaghmare085-droid.github.io/repo-name/bug-hunt-game.html
+https://suvaniwaghmare085-droid.github.io/Bug-Hunt-game/bug-hunt-game.html
