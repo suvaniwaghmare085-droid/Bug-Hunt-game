@@ -366,12 +366,78 @@
   }
   .start-btn:hover { opacity: 0.88; transform: translateY(-1px); }
 
+  .filter-section {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 1.8rem;
+  }
+
+  .filter-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    text-align: left;
+  }
+
   .lang-tags {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 2rem;
+    justify-content: flex-start;
+  }
+
+  .lang-toggle {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: opacity 0.15s, transform 0.1s;
+    user-select: none;
+  }
+
+  .lang-toggle:hover { transform: translateY(-1px); }
+
+  .lang-toggle.off {
+    opacity: 0.28;
+    filter: grayscale(0.5);
+  }
+
+  .diff-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 0.6rem;
+  }
+
+  .diff-toggle {
+    font-size: 0.7rem;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: opacity 0.15s, transform 0.1s;
+    user-select: none;
+  }
+
+  .diff-toggle:hover { transform: translateY(-1px); }
+  .diff-toggle.off { opacity: 0.28; filter: grayscale(0.5); }
+
+  .warn-text {
+    font-size: 0.75rem;
+    color: var(--red);
+    font-family: var(--mono);
+    margin-top: 0.5rem;
+    min-height: 1.1rem;
+    text-align: left;
   }
 
   .final-score {
@@ -452,14 +518,29 @@
     <div class="screen-icon">🐛</div>
     <h1>Bug Hunt</h1>
     <p>Find and fix bugs across multiple programming languages. Each round gives you a broken snippet — pick the correct fix before time runs out.</p>
-    <div class="lang-tags">
-      <span class="lang-badge lang-js">JavaScript</span>
-      <span class="lang-badge lang-py">Python</span>
-      <span class="lang-badge lang-java">Java</span>
-      <span class="lang-badge lang-cpp">C++</span>
-      <span class="lang-badge lang-ts">TypeScript</span>
-      <span class="lang-badge lang-ruby">Ruby</span>
+
+    <div class="filter-section">
+      <div class="filter-label">Languages — tap to toggle</div>
+      <div class="lang-tags" id="lang-toggles">
+        <span class="lang-toggle lang-js" data-lang="js" onclick="toggleLang(this)">JavaScript</span>
+        <span class="lang-toggle lang-py" data-lang="py" onclick="toggleLang(this)">Python</span>
+        <span class="lang-toggle lang-java" data-lang="java" onclick="toggleLang(this)">Java</span>
+        <span class="lang-toggle lang-cpp" data-lang="cpp" onclick="toggleLang(this)">C++</span>
+        <span class="lang-toggle lang-ts" data-lang="ts" onclick="toggleLang(this)">TypeScript</span>
+        <span class="lang-toggle lang-ruby" data-lang="ruby" onclick="toggleLang(this)">Ruby</span>
+      </div>
     </div>
+
+    <div class="filter-section">
+      <div class="filter-label">Difficulty — tap to toggle</div>
+      <div class="diff-tags" id="diff-toggles">
+        <span class="diff-toggle diff-easy" data-diff="easy" onclick="toggleDiff(this)">Easy</span>
+        <span class="diff-toggle diff-medium" data-diff="medium" onclick="toggleDiff(this)">Medium</span>
+        <span class="diff-toggle diff-hard" data-diff="hard" onclick="toggleDiff(this)">Hard</span>
+      </div>
+      <div class="warn-text" id="warn-text"></div>
+    </div>
+
     <button class="start-btn" onclick="startGame()">Start Hunting →</button>
   </div>
 
@@ -533,7 +614,7 @@
       </div>
     </div>
     <div style="display:flex; gap:12px;">
-      <button class="start-btn" onclick="startGame()">Play Again</button>
+      <button class="start-btn" onclick="goHome()">Play Again</button>
     </div>
   </div>
 </main>
@@ -752,7 +833,38 @@ const QUESTIONS = [
   },
 ];
 
-let questions = [];
+let selectedLangs = new Set(['js','py','java','cpp','ts','ruby']);
+let selectedDiffs = new Set(['easy','medium','hard']);
+
+function toggleLang(el) {
+  const lang = el.dataset.lang;
+  if (selectedLangs.has(lang) && selectedLangs.size === 1) return; // keep at least one
+  if (selectedLangs.has(lang)) { selectedLangs.delete(lang); el.classList.add('off'); }
+  else { selectedLangs.add(lang); el.classList.remove('off'); }
+  validateFilters();
+}
+
+function toggleDiff(el) {
+  const diff = el.dataset.diff;
+  if (selectedDiffs.has(diff) && selectedDiffs.size === 1) return;
+  if (selectedDiffs.has(diff)) { selectedDiffs.delete(diff); el.classList.add('off'); }
+  else { selectedDiffs.add(diff); el.classList.remove('off'); }
+  validateFilters();
+}
+
+function validateFilters() {
+  const available = QUESTIONS.filter(q => selectedLangs.has(q.lang) && selectedDiffs.has(q.diff));
+  const warn = document.getElementById('warn-text');
+  if (available.length === 0) {
+    warn.textContent = '⚠ No questions match — add more languages or difficulties.';
+  } else if (available.length < 5) {
+    warn.textContent = `Only ${available.length} question${available.length > 1 ? 's' : ''} match — you'll see repeats.`;
+  } else {
+    warn.textContent = `${available.length} question${available.length !== 1 ? 's' : ''} available`;
+  }
+}
+
+
 let currentQ = 0;
 let score = 0;
 let lives = 3;
@@ -766,6 +878,8 @@ let hintUsed = false;
 let answered = false;
 const TOTAL_TIME = 25;
 
+window.addEventListener('load', validateFilters);
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -776,7 +890,12 @@ function shuffle(arr) {
 }
 
 function startGame() {
-  questions = shuffle(QUESTIONS).slice(0, 10);
+  const pool = QUESTIONS.filter(q => selectedLangs.has(q.lang) && selectedDiffs.has(q.diff));
+  if (pool.length === 0) { validateFilters(); return; }
+  // if pool < 10, allow repeats by padding
+  let padded = [...pool];
+  while (padded.length < 10) padded = [...padded, ...pool];
+  questions = shuffle(padded).slice(0, 10);
   currentQ = 0; score = 0; lives = 3; streak = 0; bestStreak = 0;
   correctCount = 0; wrongCount = 0;
 
@@ -955,6 +1074,12 @@ function updateStats() {
   document.getElementById('streak-display').textContent = streak > 0 ? `${streak}🔥` : '0';
   const hearts = '♥'.repeat(lives) + '♡'.repeat(Math.max(0, 3 - lives));
   document.getElementById('lives-display').textContent = hearts;
+}
+
+function goHome() {
+  document.getElementById('stats-row').style.display = 'none';
+  showScreen('start-screen');
+  validateFilters();
 }
 
 function endGame() {
