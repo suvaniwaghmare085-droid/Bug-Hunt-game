@@ -177,10 +177,6 @@ Please keep new questions focused on **real-world bugs** that developers actuall
 
 ---
 
-## 📄 License
 
-MIT — do whatever you like with it.
-
----
 
 <p align="center">Made with 🐛 and too much debugging experience</p>
