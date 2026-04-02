@@ -10,11 +10,8 @@ A fast-paced browser-based game where you spot and fix bugs across **6 programmi
 
 ## 🎮 Demo
 
-> **Play it live →** `https://suvaniwaghmare085-droid.github.io/bug-hunt/bug-hunt-game.html`
+> **Play it live →** https://suvaniwaghmare085-droid.github.io/bug-hunt/bug-hunt-game.html
 
-*(Replace with your GitHub Pages URL after deployment — see [Hosting](#-hosting-on-github-pages) below)*
-
----
 
 ## 📸 What It Looks Like
 
